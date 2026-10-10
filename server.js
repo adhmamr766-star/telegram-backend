@@ -1,47 +1,39 @@
-const express = require('express');
-const cors = require('cors');
+module.exports = async (req, res) => {
+  // السماح بروابط موقعك (CORS)
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
 
-const app = express();
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
-// السماح بالاتصال من موقعك بشكل آمن
-app.use(cors());
-app.use(express.json());
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-// جلب التوكن والـ ID من متغيرات البيئة الآمنة
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-
-// نقطة الاتصال لإرسال الرسائل
-app.post('/send-message', async (req, res) => {
-  const { message } = req.body;
-
+  const { message } = req.body || {};
   if (!message) {
     return res.status(400).json({ success: false, error: 'الرسالة فارغة' });
   }
+
+  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
   try {
     const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text: message,
-      }),
+      body: JSON.stringify({ chat_id: CHAT_ID, text: message }),
     });
 
     const data = await response.json();
-
     if (data.ok) {
-      res.status(200).json({ success: true, message: 'تم إرسال الرسالة بنجاح' });
+      res.status(200).json({ success: true, message: 'تم الإرسال بنجاح' });
     } else {
-      res.status(500).json({ success: false, error: 'فشل الإرسال إلى تلجرام' });
+      res.status(500).json({ success: false, error: 'فشل الإرسال لتلجرام' });
     }
   } catch (error) {
-    res.status(500).json({ success: false, error: 'حدث خطأ في السيرفر' });
+    res.status(500).json({ success: false, error: 'خطأ في السيرفر' });
   }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+};
